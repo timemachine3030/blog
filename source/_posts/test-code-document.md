@@ -23,9 +23,9 @@ The main project I worked on was safety critical black-box/white-box testing. Re
   the min safe value is return instead.
 ```
 
-It doesn't take a sophisticated parser to turn the above into an Object Model. Faced with the same task now I would modify the syntax slightly and use a YAML or Markdown parser<sup>[1](#Notes)</sup>.
+It doesn't take a sophisticated parser to turn the above into an Object Model. Faced with the same task now I would modify the syntax slightly and use a YAML or Markdown parser[^1].
 
-The test harness would take a similarly outlined document and generate the required C source code and header files. Specific unit tests had setup, tear down, and test code blocks<sup>[2](#Notes)</sup>.
+The test harness would take a similarly outlined document and generate the required C source code and header files. Specific unit tests had setup, tear down, and test code blocks[^2].
 
 ```
 - Covers: SRS-0123
@@ -63,7 +63,7 @@ When everything you write can be parsed, computed, and generated into a new form
 
 *I've written 3 API documents for third party developers in the last week.*
 
-Three outside companies (integrators) want to interface with our system and need instruction on how to do so. The sticky bit is that we have different NDAs and SLAs with each of these integrators. Also, the bulk of our API is outside of the scope of what we want to share. Some of it is protected intellectual property, some is custom for just one integrator<sup>[3](#Notes)</sup>.
+Three outside companies (integrators) want to interface with our system and need instruction on how to do so. The sticky bit is that we have different NDAs and SLAs with each of these integrators. Also, the bulk of our API is outside of the scope of what we want to share. Some of it is protected intellectual property, some is custom for just one integrator[^3].
 
 There was duplication of effort in building these documents. An outline of a doc follows:
 
@@ -83,7 +83,7 @@ There was duplication of effort in building these documents. An outline of a doc
 	- Example request
 	- Example response
 
-Of the six top level bullet points three (*1, 3, 5*)  are the same in all documents. The *change history* is document specific; *Common errors* are the same in meaning, across documents, but may have different forms (XML<sup>[4](#Notes)</sup> or JSON); *Endpoint descriptions* contain the meat of the differences and the minimum of procedural generation must allow customizing these pages in each document.
+Of the six top level bullet points three (*1, 3, 5*)  are the same in all documents. The *change history* is document specific; *Common errors* are the same in meaning, across documents, but may have different forms (XML[^4] or JSON); *Endpoint descriptions* contain the meat of the differences and the minimum of procedural generation must allow customizing these pages in each document.
 
 ## Inspirations
 
@@ -144,11 +144,145 @@ The returned `tokens` is an array of [`ContentToken`](https://github.com/Definit
 
 Let's look at that `markdownParser` code block again. There are two distinct parts: (a) the `require` statements and (b) a function definition. If we stripped out the all the code blocks in this file and concatenated them together we would have a running script, but it would not be well organized. The order that you describe things is not always the order in which the compiler/interpreter wants them. This is fundamental in Donald Knuth's description of the Weave and Tangle programs. 
 
-For now we have used simple names for the blocks: `Function`, `Usage`, `markdownParser`. 
+For now we have used simple names for the blocks: `Function`, `Usage`, `markdownParser`. We can standardize these into a syntax, one that won't collide with other markdown syntax and allows us to: (1) signal that this is no ordinary code block, we need to do something with it, (2) a verb that describes what to do, (3) a noun that can act as a label or destination, and (4) the purpose of the code block, its *raison d'être*.
+
+```
+  (#save: "somefile.js":imports)
+  (#save: "somefile.js":function-definitions) Definition of markdownParser
+```
+That parses into:
+
+- verb: save
+- label: imports
+- purpose: somefile.js
 
 
-## Notes
- - [1] Maybe not ... our parser was so minimal that the self-test for it was easy to write/maintain.
- - [2] A boon of this test harness that I have not seen in other package was the ability to turn off code coverage in the setup and tear down code blocks. Coverage was only recorded for actual testing.
- - [3] a moment of weakness
- - [4] My inclusion of XML is not an endorsement of the technology.
+I added some descriptive text to line two. That's an optional caption for the rendered code block.
+
+Markdown standards don't have or reserve `(#...)` sequences. In general a parenthetical does not denote a behavior unless following `[]` for anchors, or `![]` for images. An octothorpe[^5] is equally meaningless; however, it is an escapable character.
+
+(#save: parser.js:constants) Regular Expression to capture commands
+```javascript
+const reCmdCapture = /^\(#(?<cmd>[a-z][a-z_-]+)\s*:\s*["'`](?<fn>[^["'`]+)["'`]\s*:?\s*(?<label>[^\)]*)\)\s*(?<caption>[^\n]*)/;
+function captureCommand(str) {
+    const matches = str.match(reCmdCapture)
+    return matches 
+        ? {
+            command: matches.groups.cmd,
+            purpose: matches.groups.purp,
+            label: matches.groups.label,
+            caption: matches.groups.caption
+        }
+        : false;
+
+}
+```
+
+That's one way to do it...so is:
+
+(#save: parser.js:constants) Regular Expression to match commands
+```javascript
+const reCmdMatcher = /^\(#[^)]+\)\s+[^\n]*$/;
+function matchCommand(str) {
+    const matches = str.match(reCmdMatcher);
+    if (!!matches) {
+        let [directive, caption] = str.split(/\)\s*/);
+        let [command, purpose, label] = directive.substr(2).split(/\s*:\s*/);
+        purpose = purpose.replace(/['"`]/g, ''); 
+        return { command, purpose, label, caption };
+    }
+    return false;
+}
+```
+
+(#save: test-parser.js:test) Test matcher and capture options.
+```javascript
+const { expect } = require('chai');
+
+describe('Parsing', () => {
+    const samples = [
+        '(#save: "somefile.js":imports)',
+        '(#save: "somefile.js":function-definitions) Definition of markdownParser',
+        '(#save: parser.js:constants) Regular Expression to capture commands',
+        'Will not match',
+        'Also, not a match: (#save: "somefile.js":imports)'
+    ];
+
+    describe('Capture Style', () => {
+        it('finds no captions', () => {
+            expect(captureCommand(samples[0])).to.eql({
+                command: 'save', 
+                purpose: 'somefile.js', 
+                label: 'imports', 
+                caption: ''
+            });
+        });
+        it('finds with captions', () => {
+            expect(captureCommand(samples[1])).to.eql({
+                command: 'save', 
+                purpose: 'somefile.js', 
+                label: 'function-definitions', 
+                caption: 'Definition of markdownParser'
+            });
+        });
+
+        it('finds, optional quotes around purpose/filename', () => {
+            expect(captureCommand(samples[2])).to.eql({
+                command: 'save', 
+                purpose: 'parser.js', 
+                label: 'constants', 
+                caption: 'Regular Expression to capture commands'
+            });
+        });
+        it('returns false if not match', () => {
+            expect(captureCommand(samples[3])).to.eql(false);
+        });
+
+        it('ignores directives that are not in the first column', () => {
+            expect(captureCommand(samples[4])).to.eql(false);
+        });
+    });
+    describe('Matcher Style', () => {
+        it('finds no captions', () => {
+            expect(matchCommand(samples[0])).to.eql({
+                command: 'save', 
+                purpose: 'somefile.js', 
+                label: 'imports', 
+                caption: ''
+            });
+        });
+
+        it('finds with captions', () => {
+            expect(matchCommand(samples[1])).to.eql({
+                command: 'save', 
+                purpose: 'somefile.js', 
+                label: 'function-definitions', 
+                caption: 'Definition of markdownParser'
+            });
+        });
+
+        it('finds, optional quotes around purpose/filename', () => {
+            expect(matchCommand(samples[2])).to.eql({
+                command: 'save', 
+                purpose: 'parser.js', 
+                label: 'constants', 
+                caption: 'Regular Expression to capture commands'
+            });
+        });
+
+        it('returns false if not match', () => {
+            expect(matchCommand(samples[3])).to.eql(false);
+        });
+
+        it('ignores directives that are not in the first column', () => {
+            expect(matchCommand(samples[4])).to.eql(false);
+        });
+    });
+});
+```
+
+ [^1]: Maybe not ... our parser was so minimal that the self-test for it was easy to write/maintain.
+ [^2]: A boon of this test harness that I have not seen in other package was the ability to turn off code coverage in the setup and tear down code blocks. Coverage was only recorded for actual testing.
+ [^3]: A moment of weakness
+ [^4]: My inclusion of XML is not an endorsement of the technology.
+ [^5]: Vim's default English dictionary doesn't include this common term for a hash mark. The suggested replacement is `ectotherm`.
