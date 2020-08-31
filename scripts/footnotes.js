@@ -62,12 +62,13 @@ function renderFootnotes(text) {
 
     // render footnotes (HTML)
     footnotes.forEach(function (footNote) {
+        let fnHtml = hexo.render.renderSync({text: footNote.content.trim(), engine: 'md'});
         html += '<li id="fn:' + footNote.index + '">';
         html += '<span style="display: inline-block; vertical-align: top; padding-right: 10px; margin-left: -40px">';
         html += footNote.index;
         html += '.</span>';
         html += '<span style="display: inline-block; vertical-align: top; margin-left: 10px;">';
-        html += footNote.content.trim();
+        html += fnHtml;
         html += '<a href="#fnref:' + footNote.index + '" rev="footnote"> &hookleftarrow;</a></span></li>';
     });
 
@@ -86,4 +87,4 @@ function renderFootnotes(text) {
 hexo.extend.filter.register('before_post_render', function(data) {
     data.content = renderFootnotes(data.content);
     return data;
-});
+}, 1);
