@@ -144,7 +144,7 @@ The returned `tokens` is an array of [`ContentToken`](https://github.com/Definit
 
 Let's look at that `markdownParser` code block again. There are two distinct parts: (a) the `require` statements and (b) a function definition. If we stripped out the all the code blocks in this file and concatenated them together we would have a running script, but it would not be well organized. The order that you describe things is not always the order in which the compiler/interpreter wants them. This is fundamental in Donald Knuth's description of the Weave and Tangle programs. 
 
-For now we have used simple names for the blocks: `Function`, `Usage`, `markdownParser`. We can standardize these into a syntax, one that won't collide with other markdown syntax and allows us to: (1) signal that this is no ordinary code block, we need to do something with it, (2) a verb that describes what to do, (3) a noun that can act as a label or destination, and (4) the purpose of the code block, its *raison d'être*.
+So far we have used simple names for the blocks: `Function`, `Usage`, `markdownParser`. We can standardize these into a syntax[^5], one that won't collide with other markdown syntax and allows us to: (1) signal that this is no ordinary code block, we need to do something with it, (2) a verb that describes what to do, (3) a noun that can act as a label or destination, and (4) the purpose of the code block, its *raison d'être*.
 
 ```
   (#save: "somefile.js":imports)
@@ -159,7 +159,7 @@ That parses into:
 
 I added some descriptive text to line two. That's an optional caption for the rendered code block.
 
-Markdown standards don't have or reserve `(#...)` sequences. In general a parenthetical does not denote a behavior unless following `[]` for anchors, or `![]` for images. An octothorpe[^5] is equally meaningless; however, it is an escapable character.
+Markdown standards don't have or reserve `(#...)` sequences. In general a parenthetical does not denote a behavior unless following `[]` for anchors, or `![]` for images. An octothorpe[^6] is equally meaningless; however, it is an escapable character. So if there is a need we can type (&#92;#...) and the parser will do the right thing.
 
 (#save: parser.js:constants) Regular Expression to capture commands
 ```javascript
@@ -174,7 +174,6 @@ function captureCommand(str) {
             caption: matches.groups.caption
         }
         : false;
-
 }
 ```
 
@@ -285,4 +284,5 @@ describe('Parsing', () => {
  [^2]: A boon of this test harness that I have not seen in other package was the ability to turn off code coverage in the setup and tear down code blocks. Coverage was only recorded for actual testing.
  [^3]: A moment of weakness
  [^4]: My inclusion of XML is not an endorsement of the technology.
- [^5]: Vim's default English dictionary doesn't include this common term for a hash mark. The suggested replacement is `ectotherm`.
+ [^5]: For the  hexo script to format the directives into `figcaption` see [the github project for this blog](https://github.com/timemachine3030/blog/blob/master/scripts/create-caption.js)
+ [^6]: Vim's default English dictionary doesn't include this common term for a hash mark. The suggested replacement is `ectotherm`.
