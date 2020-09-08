@@ -69,11 +69,11 @@ There was duplication of effort in building these documents. An outline of a doc
 
  1. Cover page
 	- Title
-	- Supported API version
+	- Supported API [version](version)
 	- Release date
 	- Confidentiality statement
  2. Detailed change history of document
-    - A table with the Release Date and Changes
+	- A table with the Release Date and Changes
  3. Document conventions
  4. Common error response codes, meanings, examples, and remedies
  5. Authentication requirements
@@ -163,7 +163,7 @@ Markdown standards don't have or reserve `(#...)` sequences. In general a parent
 
 (#save: parser.js:constants) Regular Expression to capture commands
 ```javascript
-const reCmdCapture = /^\(#(?<cmd>[a-z][a-z_-]+)\s*:\s*["'`](?<fn>[^["'`]+)["'`]\s*:?\s*(?<label>[^\)]*)\)\s*(?<caption>[^\n]*)/;
+const reCmdCapture = /^\(#(?<cmd>[a-z][a-z_-]+)\s*:\s*["'`]?(?<purp>[^["'`:]+)["'`]?\s*:?\s*(?<label>[^\)]*)\)\s*(?<caption>[^\n]*)/;
 function captureCommand(str) {
     const matches = str.match(reCmdCapture)
     return matches 
@@ -174,6 +174,7 @@ function captureCommand(str) {
             caption: matches.groups.caption
         }
         : false;
+
 }
 ```
 
@@ -181,13 +182,16 @@ That's one way to do it...so is:
 
 (#save: parser.js:constants) Regular Expression to match commands
 ```javascript
-const reCmdMatcher = /^\(#[^)]+\)\s+[^\n]*$/;
+const reCmdMatcher = /^\(#[^)]+\)/;
+const reSplitOffCaption = /\)\s*/;
+const reDirectiveSplitter = /\s*:\s*/;
+const reCaptureUnquoted = /^(['"`])?(.+?)\1?$/;
 function matchCommand(str) {
     const matches = str.match(reCmdMatcher);
     if (!!matches) {
-        let [directive, caption] = str.split(/\)\s*/);
-        let [command, purpose, label] = directive.substr(2).split(/\s*:\s*/);
-        purpose = purpose.replace(/['"`]/g, ''); 
+        let [directive, caption] = str.split(reSplitOffCaption);
+        let [command, purpose, label] = directive.substr(2).split(reDirectiveSplitter);
+        purpose = purpose.match(reCaptureUnquoted)[2]; 
         return { command, purpose, label, caption };
     }
     return false;
