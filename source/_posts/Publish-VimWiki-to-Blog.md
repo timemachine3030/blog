@@ -6,7 +6,7 @@ tags: [Programming, Perl, VimWiki]
 ---
 ### What is VimWiki?
 
-I use [VimWiki](https://github.com/vimwiki/vimwiki) as my personal wiki and note taking tool. Sometimes what I write in my wiki I want to public to my [blog](/~timemachine3030). This script aim to do that.
+I use [VimWiki](https://github.com/vimwiki/vimwiki) as my personal wiki and note taking tool. Sometimes what I write in my wiki I want to publish  to my [blog](/~timemachine3030). This script aims to do that.
 
 ## Requirements
 
