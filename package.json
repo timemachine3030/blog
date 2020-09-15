@@ -4,9 +4,9 @@
   "private": true,
   "scripts": {
     "build": "hexo generate",
-    "debug": "node --inspect-brk /Users/dan/.config/yarn/global/node_modules/.bin/hexo generate",
     "clean": "hexo clean",
-    "deploy": "hexo deploy",
+    "deploy": "rsync -rv public/* ccc:~/public_html",
+    "predeploy": "yarn run build",
     "server": "hexo server"
   },
   "hexo": {
